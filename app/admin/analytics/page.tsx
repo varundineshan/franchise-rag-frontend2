@@ -72,18 +72,29 @@ export default function AnalyticsPage() {
   const fetchSummary = async () => {
     try {
       setLoading(true);
+      setError("");
       const token = await getToken();
+      
+      console.log("Fetching summary from:", `${API_BASE}/admin/audit-logs/summary?days=${days}`);
+      console.log("Token present:", !!token);
+      
       const res = await fetch(`${API_BASE}/admin/audit-logs/summary?days=${days}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
+      console.log("Summary response status:", res.status);
+      
       if (!res.ok) {
-        throw new Error("Failed to fetch summary");
+        const errorText = await res.text();
+        console.error("Summary fetch error:", errorText);
+        throw new Error(`Failed to fetch summary: ${res.status} ${errorText}`);
       }
 
       const data = await res.json();
+      console.log("Summary data:", data);
       setSummary(data);
     } catch (err) {
+      console.error("fetchSummary error:", err);
       setError(err instanceof Error ? err.message : "Failed to fetch summary");
     } finally {
       setLoading(false);
@@ -93,6 +104,7 @@ export default function AnalyticsPage() {
   const fetchLogs = async () => {
     try {
       setLoading(true);
+      setError("");
       const params = new URLSearchParams({
         days: days.toString(),
         limit: "50",
@@ -101,17 +113,28 @@ export default function AnalyticsPage() {
       if (statusFilter) params.append("status", statusFilter);
 
       const token = await getToken();
+      
+      console.log("Fetching logs from:", `${API_BASE}/admin/audit-logs?${params}`);
+      console.log("Token present:", !!token);
+      
       const res = await fetch(`${API_BASE}/admin/audit-logs?${params}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
+      console.log("Logs response status:", res.status);
+
       if (!res.ok) {
-        throw new Error("Failed to fetch logs");
+        const errorText = await res.text();
+        console.error("Logs fetch error:", errorText);
+        throw new Error(`Failed to fetch logs: ${res.status} ${errorText}`);
       }
 
       const data = await res.json();
+      console.log("Logs data:", data);
+      console.log("Number of logs:", data.logs?.length || 0);
       setLogs(data.logs || []);
     } catch (err) {
+      console.error("fetchLogs error:", err);
       setError(err instanceof Error ? err.message : "Failed to fetch logs");
     } finally {
       setLoading(false);
