@@ -90,9 +90,14 @@ export default function Home() {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
           {user?.publicMetadata?.role === "admin" && (
-            <Link href="/admin" style={{ color: "#4a5568", textDecoration: "none", fontWeight: 500, fontSize: "0.95rem", padding: "0.5rem 1rem", borderRadius: "12px", transition: "all 0.2s" }} onMouseOver={(e) => { e.currentTarget.style.backgroundColor = "#e9ecef"; e.currentTarget.style.color = "#0056b3"; }} onMouseOut={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "#4a5568"; }}>
-              Admin Portal →
-            </Link>
+            <>
+              <Link href="/admin" style={{ color: "#4a5568", textDecoration: "none", fontWeight: 500, fontSize: "0.95rem", padding: "0.5rem 1rem", borderRadius: "12px", transition: "all 0.2s" }} onMouseOver={(e) => { e.currentTarget.style.backgroundColor = "#e9ecef"; e.currentTarget.style.color = "#0056b3"; }} onMouseOut={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "#4a5568"; }}>
+                Admin Portal →
+              </Link>
+              <Link href="/analytics" style={{ color: "#4a5568", textDecoration: "none", fontWeight: 500, fontSize: "0.95rem", padding: "0.5rem 1rem", borderRadius: "12px", transition: "all 0.2s" }} onMouseOver={(e) => { e.currentTarget.style.backgroundColor = "#e9ecef"; e.currentTarget.style.color = "#0056b3"; }} onMouseOut={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "#4a5568"; }}>
+                📊 Analytics
+              </Link>
+            </>
           )}
           <UserButton afterSignOutUrl="/sign-in" />
         </div>
