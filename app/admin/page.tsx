@@ -1,10 +1,14 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useAuth, useUser, UserButton } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export default function Admin() {
+  const { getToken, isLoaded, isSignedIn } = useAuth();
+  const { user } = useUser();
+  const router = useRouter();
   const [file, setFile] = useState<File|null>(null);
-  const [orgId, setOrgId] = useState("franchise_123");
   const [manualName, setManualName] = useState("OpsManual");
   const [version, setVersion] = useState("v1");
   const [docId, setDocId] = useState<string>("");
@@ -12,14 +16,20 @@ export default function Admin() {
   const [isReindexing, setIsReindexing] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
+  useEffect(() => {
+    if (isLoaded && (!isSignedIn || user?.publicMetadata?.role !== "admin")) {
+      router.push("/");
+    }
+  }, [isLoaded, isSignedIn, user, router]);
+
   const upload = async () => {
-    if (!file) return;
+    if (!file || !isSignedIn) return;
     setIsUploading(true);
     
     try {
+      const token = await getToken();
       const fd = new FormData();
       fd.append("file", file);
-      fd.append("org_id", orgId);
       fd.append("manual_name", manualName);
       fd.append("version", version);
 
@@ -27,6 +37,9 @@ export default function Admin() {
       
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/admin/upload`, {
         method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        },
         body: fd,
       });
       
@@ -52,12 +65,16 @@ export default function Admin() {
   };
 
   const reindex = async () => {
-    if (!docId) return;
+    if (!docId || !isSignedIn) return;
     setIsReindexing(true);
     
     try {
+      const token = await getToken();
       await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/admin/reindex?doc_id=${docId}`, {
         method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
       });
       alert("Successfully re-indexed!");
     } catch (error) {
@@ -106,9 +123,12 @@ export default function Admin() {
           <span>FranchiseOps AI</span>
           <span style={{ fontSize: "0.9rem", fontWeight: 400, color: "#718096" }}>| Admin Portal</span>
         </div>
-        <Link href="/" style={{ color: "#4a5568", textDecoration: "none", fontWeight: 500, fontSize: "0.95rem", padding: "0.5rem 1rem", borderRadius: "12px", transition: "all 0.2s" }} onMouseOver={(e) => { e.currentTarget.style.backgroundColor = "#e9ecef"; e.currentTarget.style.color = "#0056b3"; }} onMouseOut={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "#4a5568"; }}>
-          ← Back to Chat
-        </Link>
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+          <Link href="/" style={{ color: "#4a5568", textDecoration: "none", fontWeight: 500, fontSize: "0.95rem", padding: "0.5rem 1rem", borderRadius: "12px", transition: "all 0.2s" }} onMouseOver={(e) => { e.currentTarget.style.backgroundColor = "#e9ecef"; e.currentTarget.style.color = "#0056b3"; }} onMouseOut={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "#4a5568"; }}>
+            ← Back to Chat
+          </Link>
+          <UserButton afterSignOutUrl="/sign-in" />
+        </div>
       </header>
 
       {/* Main Content */}
@@ -118,19 +138,6 @@ export default function Admin() {
 
           {/* Form Fields */}
           <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem", marginBottom: "1.5rem" }}>
-            <div>
-              <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, marginBottom: "0.5rem", color: "#4a5568" }}>Franchise ID</label>
-              <input
-                type="text"
-                value={orgId}
-                onChange={e => setOrgId(e.target.value)}
-                placeholder="e.g. franchise_123"
-                style={{ width: "100%", padding: "0.75rem 1rem", borderRadius: "8px", outline: "none", transition: "all 0.2s", backgroundColor: "#f8f9fa", border: "1px solid #e2e8f0", color: "#1a1f36", fontSize: "1rem" }}
-                onFocus={(e) => { e.target.style.borderColor = "#0056b3"; e.target.style.boxShadow = "0 0 0 3px rgba(0, 86, 179, 0.1)"; }}
-                onBlur={(e) => { e.target.style.borderColor = "#e2e8f0"; e.target.style.boxShadow = "none"; }}
-              />
-            </div>
-
             <div>
               <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, marginBottom: "0.5rem", color: "#4a5568" }}>Manual Type / Name</label>
               <input

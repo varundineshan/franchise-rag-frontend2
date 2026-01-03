@@ -1,20 +1,22 @@
 "use client";
 import { useState } from "react";
+import { useAuth, useUser, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 
 type Citation = { doc: string; pages: number[]; chunk_id?: string };
 type Message = { role: "user" | "ai"; content: string; citations?: Citation[]; refused?: boolean };
 
 export default function Home() {
-  const [orgId, setOrgId] = useState("franchise_123");
+  const { getToken, isLoaded, isSignedIn } = useAuth();
+  const { user } = useUser();
   const [q, setQ] = useState("");
   const [messages, setMessages] = useState<Message[]>([
-    { role: "ai", content: `Hello! I'm accessing the Ops Manual for franchise_123. What can I help you with today?` }
+    { role: "ai", content: `Hello! I'm here to help you with your franchise operations manual. What can I help you with today?` }
   ]);
   const [isLoading, setIsLoading] = useState(false);
 
   const ask = async () => {
-    if (!q.trim() || isLoading) return;
+    if (!q.trim() || isLoading || !isSignedIn) return;
     
     const userMessage: Message = { role: "user", content: q };
     setMessages(prev => [...prev, userMessage]);
@@ -22,12 +24,16 @@ export default function Home() {
     setIsLoading(true);
 
     try {
+      const token = await getToken();
+      
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/chat`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
         body: JSON.stringify({
           question: q,
-          org_id: orgId,
           manual_name: "OpsManual"
         })
       });
@@ -60,6 +66,14 @@ export default function Home() {
     }
   };
 
+  if (!isLoaded) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", backgroundColor: "#f4f6f9" }}>
+        <div style={{ color: "#4a5568", fontSize: "1.125rem" }}>Loading...</div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", backgroundColor: "#f4f6f9", color: "#1a1f36", fontFamily: "Inter, sans-serif" }}>
       {/* Header */}
@@ -74,23 +88,15 @@ export default function Home() {
           </div>
           FranchiseOps AI
         </div>
-        <Link href="/admin" style={{ color: "#4a5568", textDecoration: "none", fontWeight: 500, fontSize: "0.95rem", padding: "0.5rem 1rem", borderRadius: "12px", transition: "all 0.2s" }} onMouseOver={(e) => { e.currentTarget.style.backgroundColor = "#e9ecef"; e.currentTarget.style.color = "#0056b3"; }} onMouseOut={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "#4a5568"; }}>
-          Admin Portal →
-        </Link>
-      </header>
-
-      {/* Context Bar */}
-      <div style={{ backgroundColor: "#ffffff", padding: "0.75rem 2rem", borderBottom: "1px solid #e2e8f0" }}>
-        <div style={{ maxWidth: "900px", margin: "0 auto", display: "flex", alignItems: "center", gap: "1rem" }}>
-          <span style={{ fontWeight: 500, color: "#4a5568", fontSize: "0.9rem" }}>Active Context:</span>
-          <input
-            type="text"
-            value={orgId}
-            onChange={e => setOrgId(e.target.value)}
-            style={{ padding: "0.4rem 0.75rem", border: "1px solid #e2e8f0", borderRadius: "6px", fontFamily: "monospace", color: "#1a1f36", background: "#e9ecef", fontSize: "0.9rem", outline: "none" }}
-          />
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+          {user?.publicMetadata?.role === "admin" && (
+            <Link href="/admin" style={{ color: "#4a5568", textDecoration: "none", fontWeight: 500, fontSize: "0.95rem", padding: "0.5rem 1rem", borderRadius: "12px", transition: "all 0.2s" }} onMouseOver={(e) => { e.currentTarget.style.backgroundColor = "#e9ecef"; e.currentTarget.style.color = "#0056b3"; }} onMouseOut={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "#4a5568"; }}>
+              Admin Portal →
+            </Link>
+          )}
+          <UserButton afterSignOutUrl="/sign-in" />
         </div>
-      </div>
+      </header>
 
       {/* Chat Container */}
       <main style={{ flex: 1, overflowY: "auto", padding: "2rem", backgroundColor: "#f4f6f9" }}>
