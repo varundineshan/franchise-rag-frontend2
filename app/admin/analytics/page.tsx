@@ -14,12 +14,14 @@ type AnalyticsData = {
 
 type AuditLog = {
   id: string;
-  question: string;
-  answer: string;
-  refused: boolean;
-  latency_ms: number;
-  model: string;
-  created_at: string;
+  timestamp: string;
+  user_id: string;
+  action: string;
+  resource_id: string | null;
+  resource_type: string | null;
+  status: string;
+  metadata: any;
+  ip_address: string | null;
 };
 
 export default function Analytics() {
@@ -56,12 +58,16 @@ export default function Analytics() {
       setAnalytics(analyticsData);
 
       // Fetch audit logs
+      console.log("Fetching audit logs from:", `${process.env.NEXT_PUBLIC_API_BASE}/admin/audit-logs`);
       const logsRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/admin/audit-logs?limit=50`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
       const logsData = await logsRes.json();
-      setLogs(logsData.logs);
-      setTotalLogs(logsData.total);
+      console.log("Audit logs response:", logsData);
+      console.log("Number of logs:", logsData.logs?.length);
+      console.log("Sample log:", logsData.logs?.[0]);
+      setLogs(logsData.logs || []);
+      setTotalLogs(logsData.total || 0);
     } catch (error) {
       console.error("Error fetching analytics:", error);
     } finally {
@@ -188,44 +194,60 @@ export default function Analytics() {
           <div style={{ backgroundColor: "#ffffff", padding: "2rem", borderRadius: "12px", border: "1px solid #e2e8f0", boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
               <h2 style={{ fontSize: "1.25rem", fontWeight: 700, color: "#1a1f36" }}>Audit Logs</h2>
-              <div style={{ fontSize: "0.875rem", color: "#718096" }}>Total: {totalLogs} queries</div>
+              <div style={{ fontSize: "0.875rem", color: "#718096" }}>Total: {totalLogs} actions</div>
             </div>
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr style={{ borderBottom: "2px solid #e2e8f0" }}>
-                    <th style={{ padding: "0.75rem", textAlign: "left", fontSize: "0.875rem", fontWeight: 600, color: "#718096", textTransform: "uppercase", letterSpacing: "0.05em" }}>Question</th>
-                    <th style={{ padding: "0.75rem", textAlign: "left", fontSize: "0.875rem", fontWeight: 600, color: "#718096", textTransform: "uppercase", letterSpacing: "0.05em" }}>Answer</th>
-                    <th style={{ padding: "0.75rem", textAlign: "center", fontSize: "0.875rem", fontWeight: 600, color: "#718096", textTransform: "uppercase", letterSpacing: "0.05em" }}>Status</th>
-                    <th style={{ padding: "0.75rem", textAlign: "center", fontSize: "0.875rem", fontWeight: 600, color: "#718096", textTransform: "uppercase", letterSpacing: "0.05em" }}>Latency</th>
                     <th style={{ padding: "0.75rem", textAlign: "left", fontSize: "0.875rem", fontWeight: 600, color: "#718096", textTransform: "uppercase", letterSpacing: "0.05em" }}>Time</th>
+                    <th style={{ padding: "0.75rem", textAlign: "left", fontSize: "0.875rem", fontWeight: 600, color: "#718096", textTransform: "uppercase", letterSpacing: "0.05em" }}>Action</th>
+                    <th style={{ padding: "0.75rem", textAlign: "left", fontSize: "0.875rem", fontWeight: 600, color: "#718096", textTransform: "uppercase", letterSpacing: "0.05em" }}>User</th>
+                    <th style={{ padding: "0.75rem", textAlign: "center", fontSize: "0.875rem", fontWeight: 600, color: "#718096", textTransform: "uppercase", letterSpacing: "0.05em" }}>Status</th>
+                    <th style={{ padding: "0.75rem", textAlign: "left", fontSize: "0.875rem", fontWeight: 600, color: "#718096", textTransform: "uppercase", letterSpacing: "0.05em" }}>Resource</th>
+                    <th style={{ padding: "0.75rem", textAlign: "left", fontSize: "0.875rem", fontWeight: 600, color: "#718096", textTransform: "uppercase", letterSpacing: "0.05em" }}>IP</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {logs.map((log) => (
-                    <tr key={log.id} style={{ borderBottom: "1px solid #e2e8f0" }}>
-                      <td style={{ padding: "1rem", fontSize: "0.875rem", color: "#1a1f36", maxWidth: "300px" }}>{log.question}</td>
-                      <td style={{ padding: "1rem", fontSize: "0.875rem", color: "#4a5568", maxWidth: "400px" }}>{log.answer}</td>
-                      <td style={{ padding: "1rem", textAlign: "center" }}>
-                        <span style={{ 
-                          padding: "0.25rem 0.75rem", 
-                          borderRadius: "12px", 
-                          fontSize: "0.75rem", 
-                          fontWeight: 600,
-                          backgroundColor: log.refused ? "#fee2e2" : "#d1fae5",
-                          color: log.refused ? "#dc2626" : "#16a34a"
-                        }}>
-                          {log.refused ? "Refused" : "Success"}
-                        </span>
-                      </td>
-                      <td style={{ padding: "1rem", textAlign: "center", fontSize: "0.875rem", color: "#6366f1", fontWeight: 500 }}>
-                        {log.latency_ms}ms
-                      </td>
-                      <td style={{ padding: "1rem", fontSize: "0.875rem", color: "#718096" }}>
-                        {log.created_at ? new Date(log.created_at).toLocaleString() : "N/A"}
+                  {logs.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} style={{ padding: "2rem", textAlign: "center", color: "#718096" }}>
+                        No audit logs found. Check console for API response.
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    logs.map((log) => (
+                      <tr key={log.id} style={{ borderBottom: "1px solid #e2e8f0" }}>
+                        <td style={{ padding: "1rem", fontSize: "0.875rem", color: "#718096" }}>
+                          {new Date(log.timestamp).toLocaleString()}
+                        </td>
+                        <td style={{ padding: "1rem", fontSize: "0.875rem", color: "#1a1f36", fontWeight: 500 }}>
+                          {log.action.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </td>
+                        <td style={{ padding: "1rem", fontSize: "0.875rem", color: "#4a5568", maxWidth: "150px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {log.user_id.substring(0, 15)}...
+                        </td>
+                        <td style={{ padding: "1rem", textAlign: "center" }}>
+                          <span style={{ 
+                            padding: "0.25rem 0.75rem", 
+                            borderRadius: "12px", 
+                            fontSize: "0.75rem", 
+                            fontWeight: 600,
+                            backgroundColor: log.status === "success" ? "#d1fae5" : log.status === "failure" ? "#fee2e2" : "#fef3c7",
+                            color: log.status === "success" ? "#16a34a" : log.status === "failure" ? "#dc2626" : "#f59e0b"
+                          }}>
+                            {log.status.charAt(0).toUpperCase() + log.status.slice(1)}
+                          </span>
+                        </td>
+                        <td style={{ padding: "1rem", fontSize: "0.875rem", color: "#4a5568" }}>
+                          {log.resource_type ? `${log.resource_type}: ${log.resource_id?.substring(0, 8)}...` : "-"}
+                        </td>
+                        <td style={{ padding: "1rem", fontSize: "0.875rem", color: "#718096" }}>
+                          {log.ip_address || "-"}
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
