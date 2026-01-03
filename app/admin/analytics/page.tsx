@@ -47,7 +47,7 @@ export default function AnalyticsPage() {
 
   const [activeTab, setActiveTab] = useState<"overview" | "logs">("overview");
   const [summary, setSummary] = useState<AuditSummary | null>(null);
-  const [logs, setLogs] = useState<AuditLog[]>(null);
+  const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
