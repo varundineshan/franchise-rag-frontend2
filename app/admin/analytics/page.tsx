@@ -84,7 +84,7 @@ export default function AnalyticsPage() {
       const data = await res.json();
       setSummary(data);
     } catch (err) {
-      setError(err.message);
+      setError(err instanceof Error ? err.message : "Failed to fetch summary");
     } finally {
       setLoading(false);
     }
@@ -112,7 +112,7 @@ export default function AnalyticsPage() {
       const data = await res.json();
       setLogs(data.logs || []);
     } catch (err) {
-      setError(err.message);
+      setError(err instanceof Error ? err.message : "Failed to fetch logs");
     } finally {
       setLoading(false);
     }
