@@ -23,14 +23,29 @@ export default function Admin() {
       fd.append("manual_name", manualName);
       fd.append("version", version);
 
+      console.log("Uploading to:", `${process.env.NEXT_PUBLIC_API_BASE}/admin/upload`);
+      
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/admin/upload`, {
         method: "POST",
         body: fd,
       });
+      
+      console.log("Response status:", res.status);
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error("Upload error:", errorText);
+        alert(`Upload failed (${res.status}): ${errorText}`);
+        return;
+      }
+      
       const data = await res.json();
+      console.log("Upload response:", data);
       setDocId(data.doc_id);
+      alert("Upload successful!");
     } catch (error) {
-      alert("Upload failed. Please try again.");
+      console.error("Upload error:", error);
+      alert(`Upload failed: ${error instanceof Error ? error.message : "Unknown error"}`);
     } finally {
       setIsUploading(false);
     }
