@@ -140,7 +140,7 @@ export default function AnalyticsPage() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (err) {
-      alert("Export failed: " + err.message);
+      alert("Export failed: " + (err instanceof Error ? err.message : "Unknown error"));
     }
   };
 
